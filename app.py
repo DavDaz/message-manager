@@ -425,7 +425,14 @@ class ConfigScreen:
         
         # Extraer variables del texto de la plantilla (formato {variable})
         import re
-        template_variables = re.findall(r'\{([^\}]+)\}', template_text)
+        # Encontrar todas las variables en la plantilla
+        all_variables = re.findall(r'\{([^\}]+)\}', template_text)
+        
+        # Eliminar duplicados manteniendo el orden de aparición
+        template_variables = []
+        for var in all_variables:
+            if var not in template_variables:
+                template_variables.append(var)
         
         if not template_variables:
             self.show_snackbar("No se detectaron variables en la plantilla. Usa el formato {variable} para definir campos.")
@@ -636,6 +643,9 @@ class MessageGeneratorScreen:
                     
                     # Generar mensaje con los valores actuales
                     template = template_data["template"]
+                    
+                    # Usar format() para reemplazar todas las instancias de cada variable
+                    # Esto maneja correctamente cuando la misma variable aparece múltiples veces
                     final_message = template.format(**field_values)
                     
                     # Actualizar campo de salida
