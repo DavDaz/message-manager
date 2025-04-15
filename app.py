@@ -434,9 +434,8 @@ class ConfigScreen:
             if var not in template_variables:
                 template_variables.append(var)
         
-        if not template_variables:
-            self.show_snackbar("No se detectaron variables en la plantilla. Usa el formato {variable} para definir campos.")
-            return
+        # Si no hay variables, permitir guardar la plantilla sin campos
+        # El mensaje se mostrará tal cual está escrito
         
         # Actualizar el contenedor de campos con las variables detectadas
         self.template_fields_container.content.controls[1].value = ", ".join(template_variables)
@@ -600,6 +599,9 @@ class MessageGeneratorScreen:
                         on_click=self.generate_message
                     )
                 )
+                
+                # Actualizar la vista previa automáticamente cuando se selecciona un tipo de mensaje
+                self.update_preview()
         
         self.page.update()
     
@@ -612,17 +614,27 @@ class MessageGeneratorScreen:
                 )
                 
                 if template_data:
+                    template = template_data["template"]
+                    
+                    # Si no hay campos (variables) en la plantilla, mostrar directamente el mensaje
+                    if not template_data["fields"]:
+                        preview = template
+                        self.message_output.value = preview
+                        self.copy_button.disabled = False
+                        self.page.update()
+                        return
+                    
                     # Recopilar valores de los campos
                     field_values = {}
                     for i, field in enumerate(template_data["fields"]):
                         field_values[field] = self.fields_container.controls[i].value or f"{{{field}}}"
                     
                     # Generar mensaje con los valores actuales
-                    template = template_data["template"]
                     preview = template.format(**field_values)
                     
                     # Actualizar campo de salida
                     self.message_output.value = preview
+                    self.copy_button.disabled = False
                     self.page.update()
             except Exception as e:
                 print(f"Error al actualizar vista previa: {e}")
@@ -636,13 +648,27 @@ class MessageGeneratorScreen:
                 )
                 
                 if template_data:
+                    template = template_data["template"]
+                    
+                    # Si no hay campos (variables) en la plantilla, mostrar directamente el mensaje
+                    if not template_data["fields"]:
+                        final_message = template
+                        self.message_output.value = final_message
+                        self.copy_button.disabled = False
+                        
+                        # Mostrar notificación
+                        self.page.snack_bar = ft.SnackBar(
+                            content=ft.Text("Mensaje generado correctamente"),
+                            action="OK"
+                        )
+                        self.page.snack_bar.open = True
+                        self.page.update()
+                        return
+                    
                     # Recopilar valores de los campos
                     field_values = {}
                     for i, field in enumerate(template_data["fields"]):
                         field_values[field] = self.fields_container.controls[i].value or ""
-                    
-                    # Generar mensaje con los valores actuales
-                    template = template_data["template"]
                     
                     # Usar format() para reemplazar todas las instancias de cada variable
                     # Esto maneja correctamente cuando la misma variable aparece múltiples veces
